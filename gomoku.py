@@ -59,11 +59,7 @@ def traverseLog(cordinate,N,depth,value,visited,cutOff,playingAsMax,logFileHandl
     else:
         res += str(value)
 
-    global globalcounter
-    globalcounter = globalcounter + 1
-    if (globalcounter == 26823):
-        print "BREAK"
-    print res
+
     res += "\n"
 
     logFileHandler.write(res)
@@ -212,7 +208,7 @@ def getMinMaxAlphaBeta(gameboard,player,opponent,depth,cutOff):
     rootNode.beta = 1000000
     rootNode.sum = 0
 
-
+    gameboardTemp = copy.deepcopy(gameboard)
 
     logFileHandler = open("traverse_log.txt", "w")
     logFileHandler.write("Move,Depth,Value,Alpha,Beta\n")
@@ -223,14 +219,14 @@ def getMinMaxAlphaBeta(gameboard,player,opponent,depth,cutOff):
 
 
 
-    # bestmove = None
-    #
-    # for moves in rootNode.node:
-    #     if (moves.value == rootNode.value):
-    #         bestmove = (moves.x,moves.y)
-    #         break
-    #
-    # return makeNextBoard(gameboard,bestmove[1],bestmove[0],player)
+    bestmove = None
+
+    for moves in rootNode.node:
+        if (moves.value == rootNode.value):
+            bestmove = (moves.x,moves.y)
+            break
+
+    return makeNextBoard(gameboardTemp,bestmove[1],bestmove[0],player)
 
 def MinMaxTraversal(gameboard,player,opponent,Depth,parentNode,maxPlayer,cutOff,logFileHandler):
     if(Depth != 0):
@@ -911,7 +907,7 @@ elif(algo == '2'):
     writeGameBoard(resultBoard)
 elif(algo == '3'):
     resultBoard = getMinMaxAlphaBeta(gameCharLines,player,opponent,0,cutoffdepth )
-    # writeGameBoard(resultBoard)
+    writeGameBoard(resultBoard)
 
 
 
