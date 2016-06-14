@@ -1,0 +1,23 @@
+body{
+    background-color: black;
+}
+#main_container{
+        width: 80%;
+        margin: 0 auto;
+    }
+#board{
+    width: 750px
+}
+.square {
+    background-color:#BBDEFB;
+    display: inline-block;
+    height: 50px;
+    vertical-align: top;
+    width: 50px;
+    *display: inline;
+    zoom: 1;
+    outline: 1px solid grey;
+}
+.square:hover{
+    background-color:#E3F2FD;
+}
