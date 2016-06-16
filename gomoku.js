@@ -44,12 +44,21 @@ function clickSquare(x,y,stone){
     if(playerBlack){
         //Assign a black stone at x,y
         $("#board div[data-x='"+x+"'][data-y='"+y+"'] .stone").addClass("black").parent().attr('data-stone','b');
+        $.each(freeSpaces, function( index, value ) {
+        if(value.X == x && value.Y == y)
+            freeSpaces[index].value = 'b'
+        });
     }else{
         //Assign a white stone at x,y
         $("#board div[data-x='"+x+"'][data-y='"+y+"'] .stone").addClass("white").parent().attr('data-stone','w');
+        $.each(freeSpaces, function( index, value ) {
+        if(value.X == x && value.Y == y)
+            freeSpaces[index].value = 'w'
+        });
     }
     //Toggle the current player
     playerBlack = !playerBlack;
+
 
     getConnected8(x,y);
 }
@@ -93,7 +102,8 @@ function getConnected8(x,y){
 
 function allowFreeClicks(){
     $.each(freeSpaces, function( index, value ) {
-        $("#board div[data-x='"+value.X+"'][data-y='"+value.Y+"'].square").removeClass("free").addClass("free"); 
+        if(value.value == '.')
+            $("#board div[data-x='"+value.X+"'][data-y='"+value.Y+"'].square").removeClass("free").addClass("free"); 
     });
 }
 
@@ -104,6 +114,16 @@ function GetStoneAt(x,y){
         return 'w';
     else return '.';
 }
+
+
+// for(i=0;i<=freeSpaces.length;i++){
+//     for(j=0;j<=freeSpaces.length;j++){
+//         if(i != j)
+//             if(freeSpaces[i].X == freeSpaces[j].X && freeSpaces[i].Y == freeSpaces[j].Y)
+//                 return i;
+//     }
+// }
+    
 
 // function getObjects(obj, key, val) {
 //     var objects = [];
