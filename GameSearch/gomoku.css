@@ -1,0 +1,50 @@
+body{
+    background-color: black;
+}
+#main_container{
+        width: 80%;
+        margin: 0 auto;
+    }
+#board{
+    width: 750px
+}
+.square {
+    background-color:#BBDEFB;
+    display: inline-block;
+    height: 50px;
+    vertical-align: top;
+    width: 50px;
+    *display: inline;
+    zoom: 1;
+    outline: 1px solid grey;
+}
+.square.free:hover{
+    background-color:#E3F2FD;
+}
+.stone{
+    width: 80%;
+    height: 80%;
+    margin: 4%;
+    position: relative;
+    border-radius: 50%;
+    border: solid #565656;
+    background-color: rgba(0,0,0,0);
+    border: solid rgba(0,0,0,0);
+}
+.stone.black{
+    background-color: #292929;
+    border: solid rgba(45,45,45,100);
+}
+.stone.white{
+    background-color: #FFFFFF;
+    border: solid rgba(45,45,45,100);
+}
+
+#temp{
+    color: white;
+    position: fixed;
+    right: 20px;
+    top: 20px;
+}
+
+
