@@ -58,8 +58,10 @@ class Inference:
 
     def __init__(self):
         self.varcounter = 0
-        self.subGoals = []
+        self.unifyCounter = 0
         self.rules = None
+        self.unifications = list()
+
 
 
     def isVariable(self,variable):
@@ -78,31 +80,62 @@ class Inference:
 
 
     def Search(self,kb,goal,parentGoal):
+
         print "Query:",goal.text
+        d = {goal.predicate:list()}
+
+
+
+        self.unifications.append(d)
         targetQueries = kb[goal.predicate]
         for clause in targetQueries:
+
+
+
             checkPredicate = self.MatchConclusionParams(goal.parameters,clause.conclusion.parameters)
             if(checkPredicate):
                 # Ground Fact verification
                 if clause.premise is None:
                     theta = self.UnifyGroundFact(goal,clause,parentGoal)
-                    self.subGoals.append(theta)
+                    if theta is not None:
+                        self.unifications[self.unifyCounter][goal.predicate].append(theta)
 
 
                 #Implication Verification
                 if clause.premise is not None:
-                    #The AND step of the C algo
+                    #The AND step of the BC algo
                     print "Query:",clause.text
+
+                    self.parentSolution = dict()
 
                     for eachPremise in clause.premise:
                         eachPremise = self.UpdateParentGoal(eachPremise,goal,clause)
-                        self.Search(kb,eachPremise,goal)
+                        self.unifyCounter += 1
+                        self.Search(kb, eachPremise, goal)
 
-        if len(self.subGoals) > 0:
-            self.PrintResults(goal, True, self.subGoals)
+
+
+                        # self.unifications[self.unifyCounter][eachPremise.predicate].append()
+
+
+
+
+
+        if len(self.unifications) > 0:
+            # print "True",self.childSolution
+            print self.unifications
+            # self.PrintResults(goal, True, self.subGoals,level)
             self.varcounter += 1
         else:
-            self.PrintResults(goal, False, self.subGoals)
+            print "False"
+            # self.PrintResults(goal, False, self.subGoals,level)
+
+        parentKey = self.unifications[self.unifyCounter - 1].keys()[0]
+        parentList = copy.deepcopy(self.unifications[self.unifyCounter - 1][parentKey])
+        childList = copy.deepcopy(self.unifications[self.unifyCounter][goal.predicate])
+        self.unifications[self.unifyCounter - 1][parentKey] = self.findIntersection(parentList,childList)
+        self.unifyCounter -= 1
+        self.unifications.pop(-1)
 
     def UpdateParentGoal(self,eachPremise,goal,clause):
         eachPremise.parameters[eachPremise.parameters.index('x')] = goal.parameters[clause.conclusion.parameters.index('x')]
@@ -115,16 +148,21 @@ class Inference:
         goalParamsTemp = copy.deepcopy(goal.parameters)
         clauseParamsTemp = copy.deepcopy(clause.conclusion.parameters)
 
-        varIndex = goalParamsTemp.index("x")
 
-        if varIndex != -1:
+        # varIndex = goalParamsTemp.index("x")
+
+        if 'x' in goalParamsTemp:
+            varIndex = goalParamsTemp.index("x")
             variable = goalParamsTemp.pop(varIndex)
             value = clauseParamsTemp.pop(varIndex)
             # Check that all other parameters are matches
             if len(list(set(goalParamsTemp)-set(clauseParamsTemp))) == 0:
-                d = {variable+str(self.varcounter):value}
+                d = value
 
                 return d
+
+        else:
+            return None
 
 
 
@@ -163,14 +201,18 @@ class Inference:
         return flag
 
 
-
-
-
-    def PrintResults(self,goal,flag,values):
-        if flag:
-            print goal.text, ": True:",values
+    def findIntersection(self,parentList,childList):
+        if len(parentList) == 0:
+            return childList
         else:
-            print goal.text, ": False"
+            return list(set(parentList).intersection(childList))
+
+
+    def PrintResults(self,goal,flag,values,level):
+        if flag:
+            print goal.text, ": True:",values,"Level ",level
+        else:
+            print goal.text, ": False","Level",level
 
 
 
