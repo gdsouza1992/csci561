@@ -12,9 +12,9 @@ class Facts:
         self.parameters = fact[i+1:-1].split(',')
 
 
-    def __eq__(self, other):
-        isEqual = True if self.predicate == other.predicate and self.parameters == other.parameters else False
-        return isEqual
+    # def __eq__(self, other):
+    #     isEqual = True if self.predicate == other.predicate and self.parameters == other.parameters else False
+    #     return isEqual
 
 
 
@@ -28,12 +28,14 @@ class Clauses:
         if (pos == -1):
             self.premise = None
             self.conclusion = Facts(clause)
+            self.type = "Ground"
         # If Implication
         else:
             # Add string from start to => to LHS
             self.premise = [Facts(premiseClause) for premiseClause in clause[:pos].split('&')]
             # Account for 2 characters in '=>' and add to RHS
             self.conclusion = Facts(clause[pos+2:])
+            self.type = "Implication"
 
 
 
@@ -61,6 +63,10 @@ class Inference:
         self.unifyCounter = 0
         self.rules = None
         self.unifications = list()
+        self.merge = False
+        self.levelUp = False
+        self.skipUnify = False
+
 
 
 
@@ -87,55 +93,69 @@ class Inference:
 
 
         self.unifications.append(d)
-        targetQueries = kb[goal.predicate]
+        targetQueries = self.getClausePredicates(kb,goal,parentGoal)
         for clause in targetQueries:
 
 
 
             checkPredicate = self.MatchConclusionParams(goal.parameters,clause.conclusion.parameters)
             if(checkPredicate):
+                if goal.parameters == clause.conclusion.parameters:
+                    self.unifications[self.unifyCounter][goal.predicate].append(True)
+                    break
+
                 # Ground Fact verification
                 if clause.premise is None:
                     theta = self.UnifyGroundFact(goal,clause,parentGoal)
                     if theta is not None:
-                        self.unifications[self.unifyCounter][goal.predicate].append(theta)
+                        if theta not in self.unifications[self.unifyCounter][goal.predicate]:
+                            if(self.merge) or self.levelUp:
+                                self.unifications[self.unifyCounter][goal.predicate].append(theta)
+                                self.merge = False
+                            else:
+                                self.unifications[self.unifyCounter][goal.predicate].insert(0,theta)
 
 
                 #Implication Verification
                 if clause.premise is not None:
-                    #The AND step of the BC algo
+                    #The AND step of the BC algorithm
                     print "Query:",clause.text
 
                     self.parentSolution = dict()
 
                     for eachPremise in clause.premise:
+                        self.levelUp = False
                         eachPremise = self.UpdateParentGoal(eachPremise,goal,clause)
                         self.unifyCounter += 1
                         self.Search(kb, eachPremise, goal)
 
 
+        printed = False
+        if len(self.unifications)>0:
+            if len(self.unifications[-1].values()[0]) > 0:
+                if self.unifications[-1].values()[0][0] == True:
+                    printed = True
+                    print goal.text,": True"
 
-                        # self.unifications[self.unifyCounter][eachPremise.predicate].append()
-
-
-
-
-
-        if len(self.unifications) > 0:
-            # print "True",self.childSolution
-            print self.unifications
-            # self.PrintResults(goal, True, self.subGoals,level)
-            self.varcounter += 1
+        if len(self.unifications) > 0 and not printed:
+            if len(self.unifications[-1].values()[0]) == 0:
+                print goal.text,": False"
+            else:
+                print goal.text,": True:",self.unifications[-1].values()[0]
         else:
-            print "False"
-            # self.PrintResults(goal, False, self.subGoals,level)
+            if not printed:
+                print goal.text,": False"
 
-        parentKey = self.unifications[self.unifyCounter - 1].keys()[0]
-        parentList = copy.deepcopy(self.unifications[self.unifyCounter - 1][parentKey])
-        childList = copy.deepcopy(self.unifications[self.unifyCounter][goal.predicate])
-        self.unifications[self.unifyCounter - 1][parentKey] = self.findIntersection(parentList,childList)
-        self.unifyCounter -= 1
-        self.unifications.pop(-1)
+
+        #Merge with parent based on common values
+        if not self.skipUnify:
+            parentKey = self.unifications[self.unifyCounter - 1].keys()[0]
+            parentList = copy.deepcopy(self.unifications[self.unifyCounter - 1][parentKey])
+            childList = copy.deepcopy(self.unifications[self.unifyCounter][goal.predicate])
+            self.unifications[self.unifyCounter - 1][parentKey] = self.findIntersection(parentList,childList)
+            self.unifyCounter -= 1
+            self.unifications.pop(-1)
+            self.levelUp = True
 
     def UpdateParentGoal(self,eachPremise,goal,clause):
         eachPremise.parameters[eachPremise.parameters.index('x')] = goal.parameters[clause.conclusion.parameters.index('x')]
@@ -161,8 +181,30 @@ class Inference:
 
                 return d
 
+
         else:
             return None
+
+
+    def getClausePredicates(self, kb, goal, parentGoal):
+        if 'x' in goal.parameters:
+            return kb[goal.predicate]
+        else:
+
+            checkList = list()
+            for eachClause in kb[goal.predicate]:
+                if eachClause.type == "Ground":
+                    if goal.parameters == eachClause.conclusion.parameters:
+                        checkList.append(eachClause)
+
+            if len(checkList) > 0:
+                return checkList
+
+            for eachClause in kb[goal.predicate]:
+                checkList.append(eachClause)
+
+            return checkList
+
 
 
 
@@ -205,7 +247,11 @@ class Inference:
         if len(parentList) == 0:
             return childList
         else:
-            return list(set(parentList).intersection(childList))
+            returnList = list(set(parentList).intersection(childList))
+            if(len(returnList)>0):
+                self.merge = True
+
+            return returnList
 
 
     def PrintResults(self,goal,flag,values,level):
