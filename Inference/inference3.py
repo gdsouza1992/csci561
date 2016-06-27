@@ -100,7 +100,7 @@ class Inference:
 
             checkPredicate = self.MatchConclusionParams(goal.parameters,clause.conclusion.parameters)
             if(checkPredicate):
-                if goal.parameters == clause.conclusion.parameters:
+                if goal.parameters == clause.conclusion.parameters and 'x' not in clause.conclusion.parameters:
                     self.unifications[self.unifyCounter][goal.predicate].append(True)
                     break
 
