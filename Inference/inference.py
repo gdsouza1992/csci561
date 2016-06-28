@@ -208,8 +208,10 @@ class Inference:
             self.levelUp = True
 
     def UpdateParentGoal(self,eachPremise,goal,clause):
-        eachPremise.parameters[eachPremise.parameters.index('x')] = goal.parameters[clause.conclusion.parameters.index('x')]
+        if 'x' in eachPremise.parameters:
+            eachPremise.parameters[eachPremise.parameters.index('x')] = goal.parameters[clause.conclusion.parameters.index('x')]
         return eachPremise
+
 
 
     def UnifyGroundFact(self,goal,clause,parentGoal):
