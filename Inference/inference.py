@@ -3,50 +3,80 @@ import copy
 #
 #
 # # #
+masterGoalFlag = False
+masterGoalFlagTemp = False
+masterGoalSolution = list()
+masterGoalSolutionTemp = list()
+
 class Facts:
     def __init__(self,fact):
         # Get string befor the '('
+        self.text = fact
         i = fact.find('(')
         self.predicate = fact[:i]
         self.parameters = fact[i+1:-1].split(',')
-        self.subGoals = list()
 
-    def __eq__(self, other):
-        isEqual = True if self.predicate == other.predicate and self.parameters == other.parameters else False
-        return isEqual
+
+    # def __eq__(self, other):
+    #     isEqual = True if self.predicate == other.predicate and self.parameters == other.parameters else False
+    #     return isEqual
+
+
+
 class Clauses:
     def __init__(self,clause):
 
-        self.ClauseStr = clause
+        self.text = clause
         pos = clause.find('=>')
 
         # If Ground Clause
         if (pos == -1):
             self.premise = None
             self.conclusion = Facts(clause)
+            self.type = "Ground"
         # If Implication
         else:
             # Add string from start to => to LHS
             self.premise = [Facts(premiseClause) for premiseClause in clause[:pos].split('&')]
             # Account for 2 characters in '=>' and add to RHS
             self.conclusion = Facts(clause[pos+2:])
+            self.type = "Implication"
 
-class Solution:
-    solutions = dict()
-    def __init__(self,index,value):
-        self.solutions[index] = self.solutions[index] + [value]
 
 
 class KnowledgeBase:
     kbaseData = dict()
     goalQuery = None
+    goals = list()
 
-    def __init__(self, goal):
-        self.goalQuery = Facts(goal)
+    def __init__(self, goal,fileoutput):
+        if "&" in goal:
+            fileoutput.write(str("Query:")+" "+ str(goal)+str("\n"))
+            print str("Query:")+" "+ str(goal)+str("\n")
+
+            for compoundGoal in goal.split("&"):
+                self.goals.append(Facts(compoundGoal))
+        else:
+            self.goals.append(Facts(goal))
+
 
     def checkQuery(self):
         solutions = dict()
-        # return Inference().FOL_BC_ASK(self.kbaseData,self.goalQuery,0,solutions)
+        tempFlag = True
+        tempSolution = list()
+        for query in self.goals:
+
+            Inference().Search(self.kbaseData,query,query)
+            global masterGoalFlag
+            global masterGoalSolution
+            tempFlag = tempFlag and masterGoalFlag
+            tempSolution = Inference().findIntersection(tempSolution,masterGoalSolution)
+            # tempSolution
+            masterGoalFlag = tempFlag
+
+        masterGoalFlagTemp = masterGoalFlag
+        masterGoalSolutionTemp = masterGoalSolution
+        return masterGoalFlagTemp,masterGoalSolutionTemp
 
     def insertNewQuery(self,logicStatement):
         # Create A Clause
@@ -57,8 +87,18 @@ class KnowledgeBase:
 class Inference:
 
     def __init__(self):
+
         self.varcounter = 0
-        self.subGoals = dict()
+        self.unifyCounter = 0
+        self.rules = None
+        self.unifications = list()
+        self.merge = False
+        self.levelUp = False
+        self.skipUnify = False
+        self.AndFail = False
+
+
+
 
     def isVariable(self,variable):
         if(isinstance(variable,str)):
@@ -74,165 +114,221 @@ class Inference:
             return False
 
 
-    def replaceQuery(self,parameters,find,replace):
-        for index, item in enumerate(parameters):
-            if not (item == find):
-                parameters[index] = replace
-        return parameters
 
-    def intersection(self,a, b):
-        return list(set(a) - set(b))[0]
+    def Search(self,kb,goal,parentGoal):
 
-    def checkDupliactes(self,level,solutionDict,count):
-        uniqueList = list(set(solutionDict[level]))
-        returnList = list()
-        for values in uniqueList:
-            if solutionDict[level].count(values) == count:
-                returnList.append(values)
+        # print "Query:",goal.text
+        self.PrintResults(1, "Query:", goal.text, None)
+        d = {goal.predicate:list()}
 
-        return returnList
 
-    def FOL_BC_ASK(self,kb,goalQuery,level,solutions):
 
-        kbGoals = kb[goalQuery.predicate]
-        print goalQuery.predicate
+        self.unifications.append(d)
+        targetQueries = self.getClausePredicates(kb,goal,parentGoal)
+        for clause in targetQueries:
+            self.AndFail = False
 
-        for askQuery in kbGoals:
-            goalParams = goalQuery.parameters
-            askParams = askQuery.conclusion.parameters
 
-            if 'x' in goalParams and 'x' in askParams:
-                print askQuery.ClauseStr
-                diffSet = set(goalParams) - set(askParams)
-                if(len(diffSet) == 0):
-                    for premises in askQuery.premise:
-                        solutions[level] = (self.FOL_BC_ASK(kb, premises,level+1,solutions))
-                    solutions[level] = self.checkDupliactes(level+1,solutions,len(askQuery.premise))
-                    del solutions[level+1][:]
+            checkPredicate = self.MatchConclusionParams(goal.parameters,clause.conclusion.parameters)
+            if(checkPredicate):
+                if goal.parameters == clause.conclusion.parameters and 'x' not in clause.conclusion.parameters:
+                    self.unifications[self.unifyCounter][goal.predicate].append(True)
+                    break
 
-            elif not 'x' in goalParams and 'x' in askParams:
-                print askQuery.ClauseStr
-                diffSet = list(set(goalParams) - set(askParams))
-                if 'x' not in diffSet:
-                    for premises in askQuery.premise:
-                        premises.parameters = self.replaceQuery(premises.parameters,'x',diffSet[0])
-                        solutions[level] = (self.FOL_BC_ASK(kb, premises, level + 1, solutions))
-                    solutions[level] = self.checkDupliactes(level + 1, solutions, len(askQuery.premise))
-                    del solutions[level+1][:]
+                # Ground Fact verification
+                if clause.premise is None:
+                    theta = self.UnifyGroundFact(goal,clause,parentGoal)
+                    if theta is not None:
+                        if theta not in self.unifications[self.unifyCounter][goal.predicate] or False not in self.unifications[self.unifyCounter][goal.predicate]:
+                            if(self.merge) or self.levelUp:
+                                if len(self.unifications[-1].values()[0]) > 1 and False in self.unifications[-1].values()[0]:
+                                    self.unifications[-1].values()[0].remove(False)
+                                self.unifications[self.unifyCounter][goal.predicate].append(theta)
+                                self.merge = False
+                            else:
+                                self.unifications[self.unifyCounter][goal.predicate].insert(0,theta)
 
+
+                #Implication Verification
+                if clause.premise is not None:
+                    #The AND step of the BC algorithm
+                    self.PrintResults(1,"Query:",clause.text,None)
+
+                    self.parentSolution = dict()
+
+                    for eachPremise in clause.premise:
+                        if self.AndFail:
+                            self.unifications[self.unifyCounter][goal.predicate].append(False)
+                        else:
+                            self.levelUp = False
+                            self.AndFail = False
+                            eachPremise = self.UpdateParentGoal(eachPremise,goal,clause)
+                            self.unifyCounter += 1
+                            self.Search(kb, eachPremise, goal)
+
+
+
+        printed = False
+        if len(self.unifications)>0:
+            if len(self.unifications[-1].values()[0]) > 0:
+                if self.unifications[-1].values()[0][0] == True:
+                    printed = True
+                    # goal.text,": True"
+                    self.PrintResults(5,goal.text,": True",None)
+                    self.setMasterGoal(True)
+
+        if len(self.unifications) > 0 and not printed:
+            if len(self.unifications[-1].values()[0]) == 0 or False in self.unifications[-1].values()[0]:
+
+                self.PrintResults(4, goal.text, ": False",None)
+                self.setMasterGoal(False)
+                # print goal.text,": False"
+                self.AndFail = True
             else:
-                diffSet = list(set(goalParams) - set(askParams))
-                if diffSet == goalParams:
-                    continue
-                if diffSet[0] == 'x':
-                    solutionString = self.intersection(askParams,goalParams)
-                    solutions.setdefault(level,[]).append(solutionString)
-                    solutions["key"] = goalQuery.predicate
-
-        return solutions[level]
-                    # return self.intersection(askParams,goalParams)
-
-            # Cmbine the common Query Truth values
-            # goalQuery.subGoals = list(set(goalQuery.subGoals) | set(tempGoals))
-            # print tempGoals
-
-        # compoundGoals = list(set(goalQuery.subGoals) | set(tempGoals))
-
-            # print goalQuery.subGoals
-            # return tempGoals
+                self.PrintResults(3, goal.text, ": True:",self.unifications[-1].values()[0])
+                self.setMasterGoal(True)
+                # print goal.text,": True:",self.unifications[-1].values()[0]
+        else:
+            if not printed:
+                self.PrintResults(4, goal.text, ": False",None)
+                self.setMasterGoal(False)
+                # print goal.text,": False"
 
 
-            # if 'x' in tempParams and 'x' not in baseParams:
+        #Merge with parent based on common values
+        if not self.skipUnify:
+            parentKey = self.unifications[self.unifyCounter - 1].keys()[0]
+            parentList = copy.deepcopy(self.unifications[self.unifyCounter - 1][parentKey])
+            childList = copy.deepcopy(self.unifications[self.unifyCounter][goal.predicate])
+            self.unifications[self.unifyCounter - 1][parentKey] = self.findIntersection(parentList,childList)
+            global masterGoalSolution
+            masterGoalSolution = self.unifications[self.unifyCounter - 1][parentKey]
+            self.unifyCounter -= 1
+            self.unifications.pop(-1)
+            self.levelUp = True
+
+    def UpdateParentGoal(self,eachPremise,goal,clause):
+        eachPremise.parameters[eachPremise.parameters.index('x')] = goal.parameters[clause.conclusion.parameters.index('x')]
+        return eachPremise
 
 
-        #
-        #
-        # if isinstance(goal,Clauses):
-        #     goalKey = goal.conclusion.predicate
-        # if isinstance(goal,Facts):
-        #     goalKey = goal.predicate
-        #
-        # goalObj = goal
-        # goalClauses = kb[goalKey]
-        # for queries in goalClauses:
-        #     self.Substr(kb, queries, goalObj, dict())
-    #
-    # def STANDARDIZE(self,premiseLHS,conclusionRHS):
-    #
-    #
-    # def SUBST(self,theta,subStatement):
-    #
-    #
-    #
-    # def FOL_BC_AND(self, kb, goals, theta):
-    #
-    #
-    # def UNIFY(self, x, y, theta):
-    #
-    #
-    # def UNIFYVAR(self, var, x, theta):
+    def UnifyGroundFact(self,goal,clause,parentGoal):
 
 
-    # def printQuery(self,query,found,theta):
-    #     str = query
-    #     str += ": "
-    #     if found:
-    #         str += "True"
-    #         str += ": ["
-    #
-    #         if theta != None:
-    #             for values in theta:
-    #                 str += "'" + values + "', "
-    #
-    #             str = str[:-2]
-    #
-    #             str += "]"
-    #     else:
-    #         str += "False"
-    #
-    #
-    #     print str
+        goalParamsTemp = copy.deepcopy(goal.parameters)
+        clauseParamsTemp = copy.deepcopy(clause.conclusion.parameters)
+
+
+        # varIndex = goalParamsTemp.index("x")
+
+        if 'x' in goalParamsTemp:
+            varIndex = goalParamsTemp.index("x")
+            variable = goalParamsTemp.pop(varIndex)
+            value = clauseParamsTemp.pop(varIndex)
+            # Check that all other parameters are matches
+            if len(list(set(goalParamsTemp)-set(clauseParamsTemp))) == 0:
+                d = value
+
+                return d
+
+
+        else:
+            return None
+
+
+    def getClausePredicates(self, kb, goal, parentGoal):
+        if 'x' in goal.parameters:
+            return kb[goal.predicate]
+        else:
+
+            checkList = list()
+            for eachClause in kb[goal.predicate]:
+                if eachClause.type == "Ground":
+                    if goal.parameters == eachClause.conclusion.parameters:
+                        checkList.append(eachClause)
+
+            if len(checkList) > 0:
+                return checkList
+
+            for eachClause in kb[goal.predicate]:
+                checkList.append(eachClause)
+
+            return checkList
+
+
+    def setMasterGoal(self,flag):
+        global masterGoalFlag
+        masterGoalFlag = flag
+
+    def MatchConclusionParams(self,goalRHS,clauseRHS):
+        goalParamLength = len(goalRHS)
+        clauseParamLength = len(clauseRHS)
+        if goalParamLength != clauseParamLength:
+            return False
+
+        flag = False
+        for i in range(goalParamLength):
+            # If both 'x'
+            if goalRHS[i] == clauseRHS[i] and goalRHS[i] == 'x' and clauseRHS[i] == 'x':
+                flag = True
+                continue
+
+            # If goal is  'x' and other is Constant
+            if goalRHS[i] == 'x' and clauseRHS[i] != 'x':
+                flag = True
+                continue
+
+            # If goal is not 'x' and other is 'x'
+            if goalRHS[i] != 'x' and clauseRHS[i] == 'x':
+                flag = True
+                continue
+
+            # If goal is constant and other is same constant
+            if goalRHS[i] == clauseRHS[i] and goalRHS != 'x':
+                flag = True
+                continue
+
+            if goalRHS[i] != clauseRHS[i] and goalRHS[i] != 'x' and clauseRHS[i] != 'x':
+                flag = False
+                return flag
+
+        return flag
+
+
+    def findIntersection(self,parentList,childList):
+        if len(parentList) == 0:
+            return childList
+        else:
+            returnList = list(set(parentList).intersection(childList))
+            if(len(returnList)>0):
+                self.merge = True
+
+            return returnList
+
+
+    def PrintResults(self,num,part1,part2,part3):
+        if num == 1 or num == 2:
+            fileoutput.write(str(part1)+" "+ str(part2)+str("\n"))
+            print str(part1) + str(part2)
+        elif num == 3:
+            fileoutput.write(str(part1)+str(part2)+" "+str(part3)+str("\n"))
+            print (str(part1)+str(part2)+" "+str(part3))
+        elif num == 4:
+            fileoutput.write(str(part1) + str(part2) + str("\n"))
+            print str(part1)+str(part2)
+        elif num == 5:
+            fileoutput.write(str(part1) + str(part2) + str("\n"))
+            print str(part1) + str(part2)
 
 
 
 
-    # def Substr(self,kb,askQuery,goalQuery,theta):
-    #
-    #     # print "Query :",myQuery.ClauseStr
-    #     tempQuery = copy.deepcopy(goalQuery)
-    #     # Check to see if the predicates are the same
-    #     if tempQuery.predicate == askQuery.conclusion.predicate:
-    #         # Check to see if the argument lists are the same size
-    #         tempParams = tempQuery.parameters
-    #         baseParams = askQuery.conclusion.parameters
-    #         if len(tempParams) == len(baseParams):
-    #
-    #             # Case 1: substitue constant for x
-    #             if 'x' in tempParams and 'x' not in baseParams:
-    #                 variable = list(set(tempParams) - set(baseParams))[0]
-    #                 constant = list(set(baseParams) - set(tempParams))[0]
-    #                 if(len(variable) == 1 and variable[0] == 'x'):
-    #                     # print variable,constant
-    #                     theta.append(constant)
-    #
-    #             # Case 2: x in goal and conclusion -> need to look up premise
-    #             if 'x' in tempParams and 'x' in baseParams:
-    #                 if tempParams == baseParams:
-    #                     for compoundPremise in askQuery.premise:
-    #                         self.FOL_BC_ASK(kb,compoundPremise)
-    #
-    #
-    #
-    #     return theta
 
 
 
 
-
-
-
-def printLine(type,value):
-    print type,":",value.values()[0]
+    def printLine(type,value):
+        print type,":",value.values()[0]
 
 
 if __name__ == '__main__':
@@ -245,12 +341,27 @@ if __name__ == '__main__':
     logicCount = int(fileLines[1])
     statements = fileLines[2:]
 
-    knowledgeBase = KnowledgeBase(goalQuery)
+
+
+    fileoutput = open("output.txt", "w")
+    knowledgeBase = KnowledgeBase(goalQuery,fileoutput)
+
     for logicStatement in statements:
         knowledgeBase.insertNewQuery(logicStatement)
 
-    sol = knowledgeBase.checkQuery()
-    print sol
+
+    solution = knowledgeBase.checkQuery()
+    if "&" in goalQuery:
+
+        if solution[0]:
+            fileoutput.write(str(goalQuery) + str(": True:") + " " + str(solution[1]) + str("\n"))
+            print str(goalQuery) + str(": True:") + " " + str(solution[1]) + str("\n")
+        else:
+            fileoutput.write(str(goalQuery) + str(": False")+ str("\n"))
+            print str(goalQuery) + str(": False")+ str("\n")
+        # self.PrintResults(3, goal.text, ": True:", self.unifications[-1].values()[0])
+    # HasTravelled(x, Congo) & Diagnosis(x, Cough):True: ['John']
+    fileoutput.close()
 
 
 
