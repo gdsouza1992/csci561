@@ -139,6 +139,8 @@ class Inference:
                 if clause.premise is None:
                     theta = self.UnifyGroundFact(goal,clause,parentGoal)
                     if theta is not None:
+                        if theta in self.unifications[self.unifyCounter][goal.predicate]:
+                            continue
                         if theta not in self.unifications[self.unifyCounter][goal.predicate] or False not in self.unifications[self.unifyCounter][goal.predicate]:
                             if(self.merge) or self.levelUp:
                                 if len(self.unifications[-1].values()[0]) > 1 and False in self.unifications[-1].values()[0]:
@@ -311,16 +313,16 @@ class Inference:
     def PrintResults(self,num,part1,part2,part3):
         if num == 1 or num == 2:
             fileoutput.write(str(part1)+" "+ str(part2)+str("\n"))
-            print str(part1) + str(part2)
+            # print str(part1) + str(part2)
         elif num == 3:
             fileoutput.write(str(part1)+str(part2)+" "+str(part3)+str("\n"))
-            print (str(part1)+str(part2)+" "+str(part3))
+            # print (str(part1)+str(part2)+" "+str(part3))
         elif num == 4:
             fileoutput.write(str(part1) + str(part2) + str("\n"))
-            print str(part1)+str(part2)
+            # print str(part1)+str(part2)
         elif num == 5:
             fileoutput.write(str(part1) + str(part2) + str("\n"))
-            print str(part1) + str(part2)
+            # print str(part1) + str(part2)
 
 
 
@@ -357,10 +359,10 @@ if __name__ == '__main__':
 
         if solution[0]:
             fileoutput.write(str(goalQuery) + str(": True:") + " " + str(solution[1]) + str("\n"))
-            print str(goalQuery) + str(": True:") + " " + str(solution[1]) + str("\n")
+            # print str(goalQuery) + str(": True:") + " " + str(solution[1]) + str("\n")
         else:
             fileoutput.write(str(goalQuery) + str(": False")+ str("\n"))
-            print str(goalQuery) + str(": False")+ str("\n")
+            # print str(goalQuery) + str(": False")+ str("\n")
         # self.PrintResults(3, goal.text, ": True:", self.unifications[-1].values()[0])
     # HasTravelled(x, Congo) & Diagnosis(x, Cough):True: ['John']
     fileoutput.close()
