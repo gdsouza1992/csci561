@@ -48,11 +48,13 @@ class KnowledgeBase:
     kbaseData = dict()
     goalQuery = None
     goals = list()
+    constantTrueValues = list()
+
 
     def __init__(self, goal,fileoutput):
         if "&" in goal:
             fileoutput.write(str("Query:")+" "+ str(goal)+str("\n"))
-            print str("Query:")+" "+ str(goal)+str("\n")
+            # print str("Query:")+" "+ str(goal)+str("\n")
 
             for compoundGoal in goal.split("&"):
                 self.goals.append(Facts(compoundGoal))
@@ -66,6 +68,8 @@ class KnowledgeBase:
         tempSolution = list()
         for query in self.goals:
 
+
+
             Inference().Search(self.kbaseData,query,query)
             global masterGoalFlag
             global masterGoalSolution
@@ -73,10 +77,22 @@ class KnowledgeBase:
             tempSolution = Inference().findIntersection(tempSolution,masterGoalSolution)
             # tempSolution
             masterGoalFlag = tempFlag
+            if 'x' not in query.parameters and True in masterGoalSolution:
+                if masterGoalSolution[-1] == True:
+                    masterGoalSolution.pop()
+                    for eachParam in query.parameters:
+                        masterGoalSolution.append(eachParam)
+
+
+
+
 
         masterGoalFlagTemp = masterGoalFlag
         masterGoalSolutionTemp = masterGoalSolution
-        return masterGoalFlagTemp,masterGoalSolutionTemp
+        if not tempSolution:
+            return False,tempSolution
+        else:
+            return masterGoalFlagTemp,masterGoalSolutionTemp
 
     def insertNewQuery(self,logicStatement):
         # Create A Clause
@@ -333,6 +349,7 @@ class Inference:
 
     def printLine(type,value):
         print type,":",value.values()[0]
+
 
 
 if __name__ == '__main__':
