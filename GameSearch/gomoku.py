@@ -867,47 +867,52 @@ def findNeighbors(gameboard):
 
 # Read the input file as a command line argument
 # Store each line in a list -> 'fileLines'
-with open(sys.argv[1], 'r') as f:
-    fileLines = f.read().splitlines()
 
-# Separate the commandLines and the game boards lines
-commandLinesList = fileLines[0:4]
-gameLinesList = fileLines[4:]
+def playMove():
 
-gameCharLines = []
-N = len(gameLinesList[0])
-
-algo = commandLinesList[0]
-playerNumber = commandLinesList[1]
-cutoffdepth = int(commandLinesList[2])
-boardsize = commandLinesList[3]
-
-for line in range(0,len(gameLinesList)):
-    gameCharLines.append(list(gameLinesList[line]))
-
-player=''
-opponent=''
+    gameBoardString = "...............,...............,...............,...............,...............,......wb.......,.......bw......,......wwb......,......b........,...............,...............,...............,...............,...............,..............."
 
 
+    # Separate the commandLines and the game boards lines
+    # commandLinesList = fileLines[0:4]
+    # gameLinesList = fileLines[4:]
+    #
+    gameCharLines = []
+    # N = len(gameLinesList[0])
 
-if(playerNumber == '1'):
-    player = 'b'
-    opponent = 'w'
-else:
-    player = 'w'
-    opponent ='b'
+    # algo = commandLinesList[0]
+    # playerNumber = commandLinesList[1]
+    # cutoffdepth = int(commandLinesList[2])
+    # boardsize = commandLinesList[3]
 
-# printGameBoard(gameCharLines)
-
-
-if(algo == '1'):
-    resultBoard = getGreedyBoard(gameCharLines,player,opponent)
-elif(algo == '2'):
-    resultBoard = getMinMax(gameCharLines,player,opponent,cutoffdepth,cutoffdepth)
-    writeGameBoard(resultBoard)
-elif(algo == '3'):
-    resultBoard = getMinMaxAlphaBeta(gameCharLines,player,opponent,0,cutoffdepth )
-    writeGameBoard(resultBoard)
+    print gameBoardString.split()
+    #
+    # for line in range(0,len(gameLinesList)):
+    #     gameCharLines.append(list(gameLinesList[line]))
+    #
+    # player=''
+    # opponent=''
+    #
+    #
+    #
+    # if(playerNumber == '1'):
+    #     player = 'b'
+    #     opponent = 'w'
+    # else:
+    #     player = 'w'
+    #     opponent ='b'
+    #
+    # # printGameBoard(gameCharLines)
+    #
+    #
+    # if(algo == '1'):
+    #     resultBoard = getGreedyBoard(gameCharLines,player,opponent)
+    # elif(algo == '2'):
+    #     resultBoard = getMinMax(gameCharLines,player,opponent,cutoffdepth,cutoffdepth)
+    #     return resultBoard
+    # elif(algo == '3'):
+    #     resultBoard = getMinMaxAlphaBeta(gameCharLines,player,opponent,0,cutoffdepth )
+    #     return resultBoard
 
 
 
@@ -915,5 +920,5 @@ elif(algo == '3'):
 # makeTree(gameCharLines,player,opponent,depth)
 # else
 
-
+playMove()
 
