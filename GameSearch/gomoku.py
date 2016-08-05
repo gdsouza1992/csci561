@@ -1,6 +1,9 @@
 import sys
 import copy
 import string
+import json
+# -*- coding: utf-8 -*-
+# try something like
 
 globalcounter = 0
 # def printLogLine(y,x,value)
@@ -106,231 +109,27 @@ def traverseLogAB(cordinate, N, depth, value,alpha,beta, cutOff, logFileHandler)
 tempNode = 0
 depth = 0
 
-def MinMaxTraversalAlphaBeta(gameboard,player,opponent,parentNode,maxPlayer,cutOff,logFileHandler):
-
-    if(parentNode.level < cutOff):
-        N = len(gameboard[0])
-        freeList = findNeighbors(gameboard)
-        sortedNeighbors = sorted(freeList, key=lambda k: (k['x'], -k['y']))
-
-        winCheck = False
-        prune = False
-
-        for child in sortedNeighbors:
-
-            childNode = parentNode.add()
-            childNode.x = child['x']
-            childNode.y = child['y']
-            childNode.name = cordinateToLetter(childNode.x, childNode.y, N)
-            childNode.level = parentNode.level + 1
 
 
-            gameboard[childNode.y][childNode.x] = player
-            childNode.alpha = parentNode.alpha
-            childNode.beta = parentNode.beta
-
-            if (childNode.level == cutOff):
-                childNode.value, isWin = calculateHeuristic(gameboard, childNode.y, childNode.x, player, opponent)
-                if not maxPlayer:
-                    childNode.value = -childNode.value
-                childNode.value += parentNode.sum
-
-                if (isWin):
-                    winCheck = True
-
-            else:
-                childNode.value, isWin = calculateHeuristic(gameboard, childNode.y, childNode.x, player, opponent)
-                if not maxPlayer:
-                    childNode.value = -childNode.value
-                childNode.sum = childNode.value + parentNode.sum
-
-                if maxPlayer:
-                    childNode.value = 1000000
-                else:
-                    childNode.value = -1000000
-
-                if isWin:
-                    childNode.value = childNode.sum
-                    winCheck = True
-
-            traverseLogAB(childNode.name, N, childNode.level, childNode.value,childNode.alpha,childNode.beta, cutOff, logFileHandler)
-
-
-            if not winCheck:
-
-                MinMaxTraversalAlphaBeta(gameboard, opponent, player, childNode, not maxPlayer, cutOff,logFileHandler)
-
-            gameboard[childNode.y][childNode.x] = '.'
-
-
-
-            if (maxPlayer):
-                if childNode.value > parentNode.value:
-                    parentNode.value = childNode.value
-
-                if childNode.value >= parentNode.alpha:
-                    if childNode.value >= parentNode.beta:
-                        prune = True
-                    else:
-                        parentNode.alpha = childNode.value
-                        childNode.alpha = childNode.value
-
-
-            else:
-                if childNode.value < parentNode.value:
-                    parentNode.value = childNode.value
-
-                if childNode.value <= parentNode.beta:
-                    if childNode.value <= parentNode.alpha:
-                        prune = True
-                    else:
-                        parentNode.beta = childNode.value
-                        childNode.beta = childNode.value
-
-
-            traverseLogAB(parentNode.name, N, parentNode.level, parentNode.value,parentNode.alpha,parentNode.beta, cutOff, logFileHandler)
-
-            if parentNode.beta <= parentNode.alpha or prune:
-                break
-
-            if winCheck:
-                winCheck = False
-
-
-
-def getMinMaxAlphaBeta(gameboard,player,opponent,depth,cutOff):
-    rootNode = node()
-    rootNode.name = 'root'
-    rootNode.level = 0
-    rootNode.rowIndex = 0
-    rootNode.value = -1000000
-    rootNode.alpha = -1000000
-    rootNode.beta = 1000000
-    rootNode.sum = 0
-
-    gameboardTemp = copy.deepcopy(gameboard)
-
-    logFileHandler = open("traverse_log.txt", "w")
-    logFileHandler.write("Move,Depth,Value,Alpha,Beta\n")
-    logFileHandler.write("root,0,-Infinity,-Infinity,Infinity\n")
-
-    MinMaxTraversalAlphaBeta(gameboard,player,opponent,rootNode,True,cutOff,logFileHandler)
-    logFileHandler.close()
-
-
-
-    bestmove = None
-
-    for moves in rootNode.node:
-        if (moves.value == rootNode.value):
-            bestmove = (moves.x,moves.y)
-            break
-
-    return makeNextBoard(gameboardTemp,bestmove[1],bestmove[0],player)
-
-def MinMaxTraversal(gameboard,player,opponent,Depth,parentNode,maxPlayer,cutOff,logFileHandler):
-    if(Depth != 0):
-
-        N = len(gameboard[0])
-        freeList = findNeighbors(gameboard)
-        sortedNeighbors = sorted(freeList, key=lambda k: (k['x'], -k['y']))
-
-        winCheck = False
-
-        for child in sortedNeighbors:
-            childNode = parentNode.add()
-            childNode.x = child['x']
-            childNode.y = child['y']
-            childNode.name = cordinateToLetter(childNode.x,childNode.y,N)
-            childNode.level = parentNode.level + 1
-            gameboard[childNode.y][childNode.x] = player
-
-            if (childNode.level == cutOff):
-                childNode.value,isWin = calculateHeuristic(gameboard, childNode.y, childNode.x, player, opponent)
-                if not maxPlayer:
-                    childNode.value = -childNode.value
-                childNode.value += parentNode.sum
-
-                if (isWin):
-                    winCheck = True
-            else:
-                childNode.value, isWin = calculateHeuristic(gameboard, childNode.y, childNode.x, player, opponent)
-                if not maxPlayer:
-                    childNode.value = -childNode.value
-                childNode.sum = childNode.value + parentNode.sum
-
-                if maxPlayer:
-                    childNode.value = 1000000
-                else:
-                    childNode.value = -1000000
-
-                if isWin:
-                    childNode.value = childNode.sum
-                    winCheck = True
-
-            traverseLog(childNode.name,N,childNode.level,childNode.value,True,cutOff,maxPlayer,logFileHandler)
-
-            if not winCheck:
-                MinMaxTraversal(gameboard,opponent,player,Depth-1,childNode,not maxPlayer,cutOff,logFileHandler)
-            gameboard[childNode.y][childNode.x] = '.'
-
-
-            if (maxPlayer):
-                if childNode.value > parentNode.value:
-                    parentNode.value = childNode.value
-            else:
-                if childNode.value < parentNode.value:
-                    parentNode.value = childNode.value
-
-            traverseLog(parentNode.name, N, parentNode.level, parentNode.value, True, cutOff, maxPlayer,logFileHandler)
-
-            if winCheck:
-                winCheck = False
-
-def getMinMax(gameboard,player,opponent,depth,cutOff):
-    rootNode = node()
-    rootNode.name = 'root'
-    rootNode.level = 0
-    rootNode.rowIndex = 0
-    rootNode.value = -1000000
-    rootNode.sum = 0
-
-
-
-    logFileHandler = open("traverse_log.txt", "w")
-    logFileHandler.write("Move,Depth,Value\n")
-    logFileHandler.write("root,0,-Infinity\n")
-
-    MinMaxTraversal(gameboard,player,opponent,depth,rootNode,True,cutOff,logFileHandler)
-    logFileHandler.close()
-
-
-    # print rootNode.value
-    bestmove = None
-
-    for moves in rootNode.node:
-        if (moves.value == rootNode.value):
-            bestmove = (moves.x,moves.y)
-            break
-
-    return makeNextBoard(gameboard,bestmove[1],bestmove[0],player)
 
 def getGreedyBoard(gameboard,player,opponent):
     freeList = findNeighbors(gameboard)
     heuristicsList = makeHeuristicBoard(gameboard,freeList,player,opponent)
+
     # print heuristicsList
     # print "\n----------------------\n"
     # print sorted(heuristicsList, key=lambda k: (k['hValue'], N - k['x'], k['y']), reverse=True)
     # print "\n----------------------\n"
     nextMove = sorted(heuristicsList, key=lambda k: (k['hValue'], N - k['x'], k['y']), reverse=True)[0]
-    for i in range(N):
-        for j in range(N):
-            if (gameboard[i][j] == '*'):
-                gameboard[i][j] = '.'
+    # for i in range(N):
+    #     for j in range(N):
+    #         if (gameboard[i][j] == '*'):
+    #             gameboard[i][j] = '.'
 
-    gameboard[nextMove['y']][nextMove['x']] = player
-    writeGameBoard(gameboard)
+    # gameboard[nextMove['y']][nextMove['x']] = player
+    ## writeGameBoard(gameboard)
     # printGameBoard(gameboard)
+    return nextMove
 
 def printGameBoard(gameboard):
     # print a given game board
@@ -387,7 +186,6 @@ def checkNorth(gameboard,y,x,player,opponent,count):
         elif(gameboard[y-1][x] == '*' or gameboard[y-1][x] == '.'):
             isOpen = True
     return count,isOpen
-
 def checkSouth(gameboard,y,x,player,opponent,count):
     isOpen = False
     if(y+1 < len(gameboard[0])):
@@ -465,6 +263,17 @@ def checkSouthEast(gameboard,y,x,player,opponent,count):
                 isOpen = True
     return count,isOpen
 
+
+def getMidBlock(Number):
+    opponentCount = -Number + 1
+    if(opponentCount >= 5):
+        return 50000, False
+    elif(opponentCount == 4):
+        return 15000, False
+    elif (opponentCount == 3):
+        return 300, False
+    elif (opponentCount == 2):
+        return 10, False
 
 def getHeuristicValue(Create,Open,Number):
     # create -> true block -> false
@@ -813,13 +622,19 @@ def getHeuristicTotal(countA, isOpenA, countB, isOpenB):
             maxPlayerValue += returnVal
             hasWin = hasWin or returnWin
 
+    if(countA < 0 and countB < 0):
+        returnVal,returnWin = getMidBlock(countA + countB)
+        maxPlayerValue += returnVal
+        hasWin = hasWin or returnWin
+
     return maxPlayerValue, hasWin
 
 # Get the connected 8 components got a given cordinate
 # Check boundary cases where neighbors of  i,j < 0  and > N(15)
 # Do it for all values of i-1 through i+1 and within that for j-1 through j+1
 # values i+2 and j+2 are not inclusive in range function
-connected8 = lambda i, j: [(x2, y2) for x2 in range(i - 1, i + 2)
+
+connected8 = lambda i, j,N=15: [(x2, y2) for x2 in range(i - 1, i + 2)
                            for y2 in range(j - 1, j + 2)
                            if
                            (0 <= x2 < N and 0 <= y2 < N and (i != x2 or j != y2) and (0 <= x2 < N) and (0 <= y2 < N))]
@@ -867,17 +682,18 @@ def findNeighbors(gameboard):
 
 # Read the input file as a command line argument
 # Store each line in a list -> 'fileLines'
+gameCharLines = []
+N = 15
+def getNextMove(gameBoardString,player,opponent):
 
-def playMove():
-
-    gameBoardString = "...............,...............,...............,...............,...............,......wb.......,.......bw......,......wwb......,......b........,...............,...............,...............,...............,...............,..............."
+    # gameBoardString = "...............,...............,...............,...............,...............,......wb.......,.......bw......,......wwb......,......b........,...............,...............,...............,...............,...............,..............."
 
 
     # Separate the commandLines and the game boards lines
     # commandLinesList = fileLines[0:4]
     # gameLinesList = fileLines[4:]
     #
-    gameCharLines = []
+
     # N = len(gameLinesList[0])
 
     # algo = commandLinesList[0]
@@ -885,34 +701,15 @@ def playMove():
     # cutoffdepth = int(commandLinesList[2])
     # boardsize = commandLinesList[3]
 
-    print gameBoardString.split()
+    gameBoardStringArray = gameBoardString.split(',')
     #
-    # for line in range(0,len(gameLinesList)):
-    #     gameCharLines.append(list(gameLinesList[line]))
-    #
-    # player=''
-    # opponent=''
-    #
-    #
-    #
-    # if(playerNumber == '1'):
-    #     player = 'b'
-    #     opponent = 'w'
-    # else:
-    #     player = 'w'
-    #     opponent ='b'
-    #
-    # # printGameBoard(gameCharLines)
-    #
-    #
-    # if(algo == '1'):
-    #     resultBoard = getGreedyBoard(gameCharLines,player,opponent)
-    # elif(algo == '2'):
-    #     resultBoard = getMinMax(gameCharLines,player,opponent,cutoffdepth,cutoffdepth)
-    #     return resultBoard
-    # elif(algo == '3'):
-    #     resultBoard = getMinMaxAlphaBeta(gameCharLines,player,opponent,0,cutoffdepth )
-    #     return resultBoard
+    for line in range(0,len(gameBoardStringArray)):
+        gameCharLines.append(list(gameBoardStringArray[line]))
+
+
+    resultBoard = getGreedyBoard(gameCharLines,player,opponent)
+
+    return resultBoard
 
 
 
@@ -920,5 +717,41 @@ def playMove():
 # makeTree(gameCharLines,player,opponent,depth)
 # else
 
-playMove()
+
+
+
+
+def index(): return dict(message="hello from game.py")
+
+
+
+def playMove():
+    #import gluon.contrib.simplejson
+    #data = gluon.contrib.simplejson.loads(request.body.read())
+    data = request.body.read()
+    if(data):
+        j = json.loads(data)
+        player = j['player']
+        opponent = j['opponent']
+        algorithm = j['algorithm']
+        depth = j['depth']
+        gameboard = j['gamedata']
+        resultArray = getNextMove(gameboard,player,opponent)
+        return str(resultArray['x'])+","+str(resultArray['y'])+","+str(resultArray['hValue'])+","+str(player)
+
+    #json_string = '{"favorited": false, "contributors": null}'
+    else:
+        return "Error"
+
+
+
+
+
+
+
+
+
+
+
+
 
