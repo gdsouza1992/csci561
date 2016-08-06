@@ -1,30 +1,39 @@
 body{
-    background-color: black;
+    background-color: black!important;
 }
 #main_container{
-        width: 80%;
-        margin: 0 auto;
+        padding: 10px;
+        float: left;
     }
 #board{
-    width: 750px
+    width: 100%
+}
+aside{
+    float:left;
 }
 .square {
     background-color:#BBDEFB;
     display: inline-block;
-    height: 50px;
     vertical-align: top;
-    width: 50px;
+    width: 6.666666667%;
     *display: inline;
     zoom: 1;
     outline: 1px solid grey;
 }
+.square.free {
+    background-color: #86c6fb;
+}
 .square.free:hover{
     background-color:#E3F2FD;
 }
+div[data-stone="b"],div[data-stone="w"]{
+    background-color: #286090;
+}
+
 .stone{
     width: 80%;
     height: 80%;
-    margin: 4%;
+    margin: 10%;
     position: relative;
     border-radius: 50%;
     border: solid #565656;
@@ -46,5 +55,22 @@ body{
     right: 20px;
     top: 20px;
 }
+
+#decision{
+    color: white;
+    position: fixed;
+    right: 20px;
+    top: 50px;
+}
+
+@media screen and (min-device-width: 768px) and (max-device-width: 1600px) {
+    .square {
+        max-width:54px;
+    }
+    #board {
+        width: 700px;
+    }
+}
+
 
 

@@ -2,21 +2,31 @@
 var freeSpaces = []
 var placedStones = []
 var playerBlack = true;
+var AIturn = false;
+var gameboard = "...............,...............,...............,...............,...............,...............,...............,...............,...............,...............,...............,...............,...............,...............,...............";
+String.prototype.replaceAt=function(index, character) {
+    return this.substr(0, index) + character + this.substr(index+character.length);
+}
 
 $(document).ready(function(){
 
     //Setup the board with 15 X 15 tiles
-    for (i = 0; i <15; i++) { 
+    for (i = 0; i <15; i++) {
         for (j = 0; j <15; j++){
             //Add data attribs for x and y cordinates and set the data stone to free space '.'
-            $("#board").append("<div data-x='"+i+"' data-y='"+j+"' data-stone='"+"."+"' class=square><div class='stone'></div></div>")    
+            $("#board").append("<div data-x='"+i+"' data-y='"+j+"' data-stone='"+"."+"' class=square><div class='stone'></div></div>")
         }
-    } 
+    }
+
+    var squareWidth = $('.square').width();
+    $('.square').height(squareWidth)
 
     //Place the starting black stone at the center of the board
     //Remove the existing free space '.' and replace with 'b' from the parent <div>.
     var centerStone = $("#board div[data-x='7'][data-y='7'] .stone").addClass("black").parent().attr('data-stone','b');
-
+    var y = 7
+    var x = 7
+    gameboard = gameboard.replaceAt(parseInt(15*x)+parseInt(x)+parseInt(y), "b");
     //Toggle the current player
     playerBlack = false
 
@@ -25,13 +35,14 @@ $(document).ready(function(){
 
     $(".square").click(function(){
         // Holds the product ID of the clicked element
-        
+
         if($(this).hasClass("free")){
             $(this).unbind("click");
             var x = $(this).attr('data-x');
             var y = $(this).attr('data-y');
             var stone = $(this).attr('data-stone');
             $(this).removeClass("free");
+            AIturn = true;
             clickSquare(x,y,stone);
         }
     });
@@ -48,6 +59,10 @@ function clickSquare(x,y,stone){
         if(value.X == x && value.Y == y)
             freeSpaces[index].value = 'b'
         });
+        var max = 15
+        var mid = x
+        gameboard = gameboard.replaceAt(parseInt(15*x)+parseInt(x)+parseInt(y), "b");
+
     }else{
         //Assign a white stone at x,y
         $("#board div[data-x='"+x+"'][data-y='"+y+"'] .stone").addClass("white").parent().attr('data-stone','w');
@@ -55,12 +70,36 @@ function clickSquare(x,y,stone){
         if(value.X == x && value.Y == y)
             freeSpaces[index].value = 'w'
         });
+        gameboard = gameboard.replaceAt(parseInt(15*x)+parseInt(x)+parseInt(y), "w");
     }
+
     //Toggle the current player
     playerBlack = !playerBlack;
+    // console.log(gameboard)
+    // console.log(x)
+    // console.log(y)
 
 
     getConnected8(x,y);
+    if(AIturn)
+        getAIMove('b','w',gameboard)
+}
+
+function putAIStone(data){
+    var response = data.split(',')
+    var x = response[0]
+    var y = response[1]
+    var hval = response[2]
+    var player = response[3]
+    //Win condition reached
+    if(hval > 49000){
+        $(".square").unbind("click");
+        $("#decision").text("Black Wins");
+        alert("Black Wins");
+    }
+
+    AIturn = false
+    clickSquare(y,x,player)
 }
 
 function getConnected8(x,y){
@@ -95,7 +134,7 @@ function getConnected8(x,y){
         freeSpaces.push({"X":(x+1),"Y":(y+1),"value":southeast});
     if(southwest == '.')
         freeSpaces.push({"X":(x-1),"Y":(y+1),"value":southwest});
-    
+
     allowFreeClicks();
     $("#board div[data-x='"+x+"'][data-y='"+y+"'].square").removeClass("free")
 }
@@ -103,7 +142,7 @@ function getConnected8(x,y){
 function allowFreeClicks(){
     $.each(freeSpaces, function( index, value ) {
         if(value.value == '.')
-            $("#board div[data-x='"+value.X+"'][data-y='"+value.Y+"'].square").removeClass("free").addClass("free"); 
+            $("#board div[data-x='"+value.X+"'][data-y='"+value.Y+"'].square").removeClass("free").addClass("free");
     });
 }
 
@@ -115,6 +154,34 @@ function GetStoneAt(x,y){
     else return '.';
 }
 
+function getAIMove(player,opponent,gameboard){
+    var currentState = {
+            algorithm: "1",
+            player:player,
+            opponent:opponent,
+            depth:"1",
+            gamedata:gameboard
+        }
+
+
+
+
+
+        $.ajax({
+            url: 'http://gdsouza.pythonanywhere.com/gomoku/game/playMove',
+            type: 'post',
+
+            data: JSON.stringify(currentState),
+            success: function (data) {
+                console.log(data);
+                putAIStone(data);
+            },
+            error: function(XMLHttpRequest, textStatus, errorThrown) {
+                console.log("Status: " + textStatus); alert("Error: " + errorThrown);
+            }
+
+        });
+}
 
 // for(i=0;i<=freeSpaces.length;i++){
 //     for(j=0;j<=freeSpaces.length;j++){
@@ -123,7 +190,7 @@ function GetStoneAt(x,y){
 //                 return i;
 //     }
 // }
-    
+
 
 // function getObjects(obj, key, val) {
 //     var objects = [];

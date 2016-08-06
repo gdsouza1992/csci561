@@ -3,18 +3,19 @@
     <head>
         <title>Gomoku - Connect 5</title>
         <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
-        <script src="gomoku.js"></script>
-        <link rel=stylesheet type="text/css" href="gomoku.css"/>
+        <script src="{{=URL('static','js/gomoku.js')}}"></script>
+        <link rel="stylesheet" href="{{=URL('static','css/gomoku.css')}}"/>
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css"/>
+        <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"></script>
+
+
     </head>
     <body>
-        <aside></aside>
+
         <section id='main_container'>
             <section id='board'>
-                
             </section>
         </section>
-        <aside>
-            <h3>Value :</h3><h3 id="temp"></h3>
-        </aside>
+
     </body>
 </html>
