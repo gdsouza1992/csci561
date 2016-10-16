@@ -107,6 +107,13 @@ function getConnected8(x,y){
     x=parseInt(x)
     y=parseInt(y)
 
+    if(playerBlack)
+        if(checkUserWin(x,y)){
+            $(".square").unbind("click");
+            $("#decision").text("Black Wins");
+            alert("Black Wins");
+        }
+
     //Find the tile value in all 8 directions
     var north = GetStoneAt(x,y-1);
     var south = GetStoneAt(x,y+1);
@@ -153,6 +160,64 @@ function GetStoneAt(x,y){
         return 'w';
     else return '.';
 }
+
+function checkUserWin(x,y){
+    originX = x;
+    originY = y;
+
+    var northCount = 0;
+    var southCount = 0;
+    var eastCount = 0;
+    var westCount = 0;
+    var northeastCount = 0;
+    var northwestCount = 0;
+    var southeastCount = 0;
+    var southwestCount = 0;
+    
+    northCount = 0
+    while(northCount<5 && GetStoneAt(x,y-1) == 'w' && x >= 0 && x <= 14 && y >= 0 && y <= 14){ 
+        y=y-1; 
+        northCount++;
+    }
+    while(southCount<5 && GetStoneAt(x,y-1) == 'w' && x >= 0 && x <= 14 && y >= 0 && y <= 14){ 
+        y=y+1; 
+        southCount++;
+    }
+    while(eastCount<5 && GetStoneAt(x,y-1) == 'w' && x >= 0 && x <= 14 && y >= 0 && y <= 14){ 
+        x=x-1; 
+        eastCount++;
+    }
+    while(westCount<5 && GetStoneAt(x,y-1) == 'w' && x >= 0 && x <= 14 && y >= 0 && y <= 14){ 
+        x=x+1; 
+        westCount++;
+    }
+    while(northeastCount<5 && GetStoneAt(x,y-1) == 'w' && x >= 0 && x <= 14 && y >= 0 && y <= 14){ 
+        x = x+1;
+        y = y-1;
+        northeastCount++;
+    }
+    while(northwestCount<5 && GetStoneAt(x,y-1) == 'w' && x >= 0 && x <= 14 && y >= 0 && y <= 14){ 
+        x = x-1;
+        y = y-1;
+        northwestCount++;
+    }
+    while(southeastCount<5 && GetStoneAt(x,y-1) == 'w' && x >= 0 && x <= 14 && y >= 0 && y <= 14){ 
+        x = x+1;
+        y = y+1;
+        southeastCount++;
+    }
+    while(southwestCount<5 && GetStoneAt(x,y-1) == 'w' && x >= 0 && x <= 14 && y >= 0 && y <= 14){ 
+        x = x-1;
+        y = y+1;
+        southwestCount++;
+    }
+
+if (northCount == 4 || southCount == 4 || eastCount == 4 || westCount == 4 || northeastCount == 4 || northwestCount == 4 || southeastCount == 4 || southwestCount == 4)
+    return true;
+else 
+    return false;     
+}
+
 
 function getAIMove(player,opponent,gameboard){
     var currentState = {
