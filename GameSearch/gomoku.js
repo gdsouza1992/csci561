@@ -3,6 +3,7 @@ var freeSpaces = []
 var placedStones = []
 var playerBlack = true;
 var AIturn = false;
+var gameover = false;
 var gameboard = "...............,...............,...............,...............,...............,...............,...............,...............,...............,...............,...............,...............,...............,...............,...............";
 String.prototype.replaceAt=function(index, character) {
     return this.substr(0, index) + character + this.substr(index+character.length);
@@ -81,7 +82,7 @@ function clickSquare(x,y,stone){
 
 
     getConnected8(x,y);
-    if(AIturn)
+    if(AIturn && !gameover)
         getAIMove('b','w',gameboard)
 }
 
@@ -93,6 +94,7 @@ function putAIStone(data){
     var player = response[3]
     //Win condition reached
     if(hval > 49000){
+        gameover = true;
         $(".square").unbind("click");
         $("#decision").text("Black Wins");
         alert("Black Wins");
@@ -110,8 +112,8 @@ function getConnected8(x,y){
     if(playerBlack)
         if(checkUserWin(x,y)){
             $(".square").unbind("click");
-            $("#decision").text("Black Wins");
-            alert("Black Wins");
+            $("#decision").text("White Wins");
+            alert("White Wins");
         }
 
     //Find the tile value in all 8 directions
@@ -174,46 +176,57 @@ function checkUserWin(x,y){
     var southeastCount = 0;
     var southwestCount = 0;
     
-    northCount = 0
+    
     while(northCount<5 && GetStoneAt(x,y-1) == 'w' && x >= 0 && x <= 14 && y >= 0 && y <= 14){ 
         y=y-1; 
         northCount++;
     }
-    while(southCount<5 && GetStoneAt(x,y-1) == 'w' && x >= 0 && x <= 14 && y >= 0 && y <= 14){ 
+    while(southCount<5 && GetStoneAt(x,y+1) == 'w' && x >= 0 && x <= 14 && y >= 0 && y <= 14){ 
         y=y+1; 
         southCount++;
     }
-    while(eastCount<5 && GetStoneAt(x,y-1) == 'w' && x >= 0 && x <= 14 && y >= 0 && y <= 14){ 
+    while(eastCount<5 && GetStoneAt(x-1,y) == 'w' && x >= 0 && x <= 14 && y >= 0 && y <= 14){ 
         x=x-1; 
         eastCount++;
     }
-    while(westCount<5 && GetStoneAt(x,y-1) == 'w' && x >= 0 && x <= 14 && y >= 0 && y <= 14){ 
+    while(westCount<5 && GetStoneAt(x+1,y) == 'w' && x >= 0 && x <= 14 && y >= 0 && y <= 14){ 
         x=x+1; 
         westCount++;
     }
-    while(northeastCount<5 && GetStoneAt(x,y-1) == 'w' && x >= 0 && x <= 14 && y >= 0 && y <= 14){ 
+    while(northeastCount<5 && GetStoneAt(x+1,y-1) == 'w' && x >= 0 && x <= 14 && y >= 0 && y <= 14){ 
         x = x+1;
         y = y-1;
         northeastCount++;
     }
-    while(northwestCount<5 && GetStoneAt(x,y-1) == 'w' && x >= 0 && x <= 14 && y >= 0 && y <= 14){ 
+    while(northwestCount<5 && GetStoneAt(x-1,y-1) == 'w' && x >= 0 && x <= 14 && y >= 0 && y <= 14){ 
         x = x-1;
         y = y-1;
         northwestCount++;
     }
-    while(southeastCount<5 && GetStoneAt(x,y-1) == 'w' && x >= 0 && x <= 14 && y >= 0 && y <= 14){ 
+    while(southeastCount<5 && GetStoneAt(x+1,y+1) == 'w' && x >= 0 && x <= 14 && y >= 0 && y <= 14){ 
         x = x+1;
         y = y+1;
         southeastCount++;
     }
-    while(southwestCount<5 && GetStoneAt(x,y-1) == 'w' && x >= 0 && x <= 14 && y >= 0 && y <= 14){ 
+    while(southwestCount<5 && GetStoneAt(x-1,y+1) == 'w' && x >= 0 && x <= 14 && y >= 0 && y <= 14){ 
         x = x-1;
         y = y+1;
         southwestCount++;
     }
 
-if (northCount == 4 || southCount == 4 || eastCount == 4 || westCount == 4 || northeastCount == 4 || northwestCount == 4 || southeastCount == 4 || southwestCount == 4)
+console.log("northCount" + northCount);
+console.log("southCount" + southCount);
+console.log("eastCount" + eastCount);
+console.log("westCount" + westCount);
+console.log("northeastCount" + northeastCount);
+console.log("northwestCount" + northwestCount);
+console.log("southeastCount" + southeastCount);
+console.log("southwestCount" + southwestCount);
+
+if (northCount == 4 || southCount == 4 || eastCount == 4 || westCount == 4 || northeastCount == 4 || northwestCount == 4 || southeastCount == 4 || southwestCount == 4){
+    gameover = true;
     return true;
+}
 else 
     return false;     
 }
